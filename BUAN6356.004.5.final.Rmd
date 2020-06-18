@@ -1,0 +1,975 @@
+---
+title: "Women Athletes In The Olympics Over 120 Years"
+author: "My Pham, Neha Ahlawat, Aditya Dandekar and Aneesh Kamat (Group 5)"
+date: "9 December 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+  
+#### **EXECUTIVE SUMMARY**  
+
+##### _**Our Objective**_   
+Our team has the objective to perform a descriptive analysis on the dataset “120 years of Olympic history: Athletes and results basic bio data on athletes and medal results from Athens 1896 to Rio 2016” from Kaggle with a focus on women athletes in order to predict their performance in the Olympics in the future.
+
+##### _**Our Team Members**_  
+Our team is a group of four students from Business Analytics With R at the University of Texas at Dallas: My Pham, Neha Ahlawat, Aditya Dandekar and Aneesh Kamat.
+
+##### _**Our Analysis Questions**_  
+Based on our objective and overview of the dataset, we proposed the following questions for the analysis:  
+1. Is there a relationship between an athlete’s physical attributes and medal tally of each sport?  
+2. Does game season have any impact on an athlete’s performance?  
+3. Evolution of women athletes over the years as in their participation and performance over the years.  
+4. Check whether a country has done consistently well in one sport. What factors contribute to their performances?  
+
+##### _**Our Findings**_  
+After performing the analysis on the dataset, we came up with several findings as follows:
+1. In the initial years of the Olympics, there was a low participation rate of women athletes.
+2. There was an increase in women participation in the Olympics in the last century with more summer games than winter games.
+3. The number of medals won by women in different countries has been increasing over the years.
+4. The top countries with the best performances in the Olympics include the US, Germany, Russia and Australia.
+
+##### _**Our Conclusion**_  
+According to our findings, we concluded that there has been more equality between men and women athletes participating in the Olympics over the past century. Age, height ad weight don't play an imporant role in predicting the number of medals won by a country. Participants sent to the Olympics by a nat
+
+
+  
+#### **PROJECT MOTIVATION/BACKGROUND**
+
+##### _**Project Introduction**_  
+Our motivation to choose the topic of women athletes came from a search on kaggle.com. After brainstorming different ideas and reviewing a plethora of topics available on free dataset sites, we agreed on choosing “120 years of the Olympics history”. Upon observing the dataset, we expected to not only analyze the dataset using R but also be able to predict a trend after the analysis. Hence, we decided to focus solely on the women athletes instead of all athletes in the Olympics. With our graph plots, results and analyses, we hoped to display the rise in the participation rate of women athletes and their accolades they earned for their countries in both Summer and Winter Olympics games.  
+
+##### _**Project Scope**_  
+Our research and analyses cover the knowledge of R programming acquired in Business Analytics With R and personal knowledge of sports in the Olympics. The codes we used in R include but are not limited to importing the dataset, creating line charts, bar charts, [others?...]
+
+
+  
+#### **DATA DESCRIPTION**  
+
+For the purpose of our analyses, we use the dataset “120 years of Olympic history: Athletes and results basic bio data on athletes and medal results from Athens 1896 to Rio 2016” from Kaggle with two csv files: 
+athlete_events.csv
+noc_regions.csv
+
+##### _**Context**_  
+According to Grandi Griffin, the author who posted the dataset, the Winter and Summer Olympics games were held in the same year up until 1992. After that, Winter Games took place every four years starting from 1994, then Summer in 1996, then Winter in 1998, and so on. He also noted that: “A common mistake people make when analyzing this data is to assume that the Summer and Winter Games have always been staggered” (Griffin, 2018).
+
+##### _**Content**_  
+There are 271,116 observations and 15 variables in the athlete_events file, which are defined as follows:  
+ID - Unique number for each athlete  
+Name - Athlete’s name  
+Sex - M or F  
+Age - Integer  
+Height - In centimeters  
+Weight - In kilograms  
+Team - Team name  
+NOC - National Olympic Committee 3-letter code  
+Games - Year and season  
+Year - Integer  
+Season - Summer or Winter  
+City - Host city  
+Sport - Sport 
+Event - Event  
+Medal - Gold, Silver, Bronze, or NA  
+
+There are 230 observations and 3 variables in the noc_regions file, which are defined as follows:  
+NOC - National Olympic Committee 3-letter code  
+Country - Current Country corresponding to the NOC code  
+Notes - Further clarification regarding the country  
+
+
+  
+#### **EXPLORATORY DATA ANALYSIS**
+
+```{r message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(gtools)
+library(sqldf)
+library(gridExtra)
+library(reshape2)
+library(data.table)
+library(treemapify)
+```
+
+```{r warning=FALSE}
+def_dir <- "C:/Users/HP/Documents/UT Dallas/Fall 2018/BUAN 6356 - BA with R/Group Project/Olympics Data"
+out_dir <- "C:/Users/HP/Documents/UT Dallas/Fall 2018/BUAN 6356 - BA with R/Group Project/Olympics Data/Outputs"
+setwd(def_dir)
+options(scipen = 999, max.print=1000000)
+
+events <- read.csv("athlete_events.csv", header = T)
+regions <- read.csv("noc_regions.csv", header = T)
+
+```
+
+After leading the data, we first changed the years of Winter Olympics from the years 1994 to 2014 to conicide with Summer Games for ease of analysis.
+We then looked at how the age, height and weight of athletes have changed over the years for male vs female.  
+```{r warning=FALSE}
+### Changing Years for Winter Olympics post 1994
+original <- c(1994,1998,2002,2006,2010,2014)
+new <- c(1996,2000,2004,2008,2012,2016)
+for (i in 1:length(original)) {
+  events$Year <- gsub(original[i], new[i], events$Year)
+}
+events$Year <- as.integer(events$Year)
+
+### Average Age Year on Year
+e_sub1 <- sqldf("select Year, Sex, median(Age) as Avg_Age from events group by 1,2")
+AgeVsYear <- ggplot(data = e_sub1, aes(x=Year, y=Avg_Age, color = Sex)) +
+  geom_smooth(se=F) +
+  geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 0))
+print(AgeVsYear)
+
+### Average Height Year on Year
+e_sub2 <- sqldf("select Year, Sex, avg(Height) as Avg_Height from events group by 1,2")
+HeightvsYear <- ggplot(data = e_sub2, aes(x=Year, y=Avg_Height, color = Sex)) + 
+  geom_line() + 
+  geom_point() + 
+  scale_x_continuous(breaks = seq(1890,2016,20))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 0))
+print(HeightvsYear)
+
+### Average Weight Year on Year
+e_sub3 <- sqldf("select Year, Sex, avg(Weight) as Avg_Weight from events group by 1,2")
+WeightvsYear <- ggplot(data = e_sub3, aes(x=Year, y=Avg_Weight, color = Sex)) +
+  geom_line() +
+  geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 0))
+print(WeightvsYear)
+
+```
+
+We can see that the average of the females during the early Olympics was quite high. It reduced slowly after that and has since been only a little lower than the male average age. 
+From the height and weight graphs, we can conclude that the athletes have in general grown bigger and taller over the years.
+
+After this initial analysis, we move on to forming a master data file by adding the country names to the existing file for convinience to reader.
+```{r warning=FALSE}
+### Adding Country from Regions file
+countries <- sqldf("select e.*, r.region as Country
+                   from events e left join regions r
+                   on e.NOC = r.NOC")
+alldata <- countries
+countries <- countries[!is.na(countries$Medal),]
+countries$Medal <- factor(countries$Medal, levels = c("Bronze", "Silver", "Gold"))
+alldata$Medal <- factor(alldata$Medal, levels = c("Bronze", "Silver", "Gold"))
+medals <- countries[,c(16,15)]
+
+```
+
+
+We now look at how the participation of men and women has increased over the years.
+```{r warning=FALSE}
+# Table counting number of athletes by Year and Sex
+counts_sex <- events %>% 
+  group_by(Year, Sex) %>%
+  summarize(Athletes = length(unique(ID)))
+counts_sex$Year <- as.integer(counts_sex$Year)
+
+# Plot number of male/female athletes vs time
+Participants <- ggplot(counts_sex, aes(x=Year, y=Athletes, group=Sex, color=Sex)) +
+  geom_point(size=2) +
+  geom_line() +
+  labs(title = "Number of Athletes (YoY)")+
+  scale_color_manual(values=c("hotpink", "dodgerblue1"))+
+  scale_x_continuous(breaks = seq(1896, 2016, 4))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 0))
+print(Participants)
+
+```
+
+Initial participation by women was very low. 1900 Summer Olympics saw the first ever woman participant. This ould be attributed to variety of reasons such as fewer countries participating to the fact that woman was always the more suppressed gender. Graph has witnessed a steady ascnet ever since then.
+
+We then look if game seasons play a role in the participation of athletes.
+```{r warning=FALSE}
+counts_sex_season<-events %>% 
+  group_by(Games, Sex, Season) %>%
+  summarise(Athletes = length(unique(ID)))
+counts_sex_season$Games <- substr(counts_sex_season$Games,1,4)
+counts_sex_season$Games <- as.numeric(counts_sex_season$Games)
+
+p1<-ggplot(data=subset(counts_sex_season, Season=='Summer'), 
+           aes(x=Games, y=Athletes, group=Sex, color=Sex))+
+  geom_point(size=2) +
+  geom_line() +
+  labs(title = "Number of Athletes - Summer Games (YoY)", y="Year") +
+  scale_color_manual(values=c("hotpink", "dodgerblue1"))+
+  scale_x_continuous(breaks = seq(1896, 2016, 4))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 0))
+print(p1)
+
+p2<-ggplot(data=subset(counts_sex_season, Season=='Winter'), 
+           aes(x=Games, y=Athletes, group=Sex, color=Sex))+
+  geom_point(size=2) +
+  geom_line() +
+  labs(title = "Number of Athletes - Winter Games (YoY)") +
+  scale_color_manual(values=c("hotpink", "dodgerblue1"))+
+    scale_x_continuous(breaks = c(seq(1896, 1992, 4), seq(1994, 2016, 4)))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 0))
+print(p2)
+
+```
+
+The number of participants in the Olympics have grown overtime. From the graph here, it is also obvious that the number of participants in the summer Olympics are more than that of the winter Olympics.  
+Reasons for which can be as follows:   
+· The number of events and disciplines in the Summer Olympics easily outnumber those in the winter edition. 
+· The winter games being based on snow attract much lesser participation specially from the tropical and equatorial countries. The last summer Olympics in London saw a participation from 205 countries compared to only about 100 nations in Sochi Winter games.  
+· The winter games attract much lesser fan following than the summers which is a direct consequence of first two points above.  
+· Media also is partly responsible for less popularity of the winter olympics as it   gets much less coverage than the Summer edition.  
+We also see some growth levelled off in 1916 summer, 1940-1944 summer and winter. These are the times of World wars and the games were cancelled.  
+Also, there is a shift in years of winter Olympics. Winter and Summer Games were held in the
+same year up until 1992. After that, they staggered them such that Winter Games occur on a four-year cycle starting with 1994, then Summer in 1996, then Winter in 1998, and so on.  
+
+
+
+We have seen the participation of women have increased over the years, in both, the Summer and the Winter games. There are various reasons for that. One amongst them is that more events in more sports started to open up for women. In the graphs below, we show how the events are distributed amongst men ane women for various sports in both the seasons.  
+```{r warning=FALSE}
+### Number of Events
+No_Of_Events_Summer <- countries %>% 
+  filter(Season == "Summer" & Year != 1906) %>%
+  group_by(Year, Sport, Sex) %>%
+  summarise(
+    NoE = length(unique(Event))
+  ) %>%
+  dcast(Year + Sport ~ Sex)
+No_Of_Events_Summer$`F`[is.na(No_Of_Events_Summer$`F`)] <- 0
+No_Of_Events_Summer$M[is.na(No_Of_Events_Summer$M)] <- 0  
+No_Of_Events_Summer <- No_Of_Events_Summer %>% 
+  mutate(
+    Score = (`F`-M) /(`F`+M)
+  )
+
+EventsDistribution <- ggplot(No_Of_Events_Summer) +
+  geom_tile(aes(x=Year, y=Sport, fill=Score), color="black") +
+  scale_fill_gradient(low="dodgerblue1", 
+                      high="hotpink", 
+                      breaks = seq(min(No_Of_Events_Summer$Score), 
+                                   max(No_Of_Events_Summer$Score)),
+                      labels = c("Only Male", "Perfectly Even", "Only Female")) +
+  scale_x_continuous(breaks = seq(1896,2016,4)) +
+  labs(title = "Events Distribution - Male vs Female (Summer Games)",
+       fill = "Score") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 0))
+print(EventsDistribution)
+
+No_Of_Events_Winter <- countries %>% 
+  filter(Season == "Winter") %>%
+  group_by(Year, Sport, Sex) %>%
+  summarise(
+    NoE = length(unique(Event))
+  ) %>%
+  dcast(Year + Sport ~ Sex)
+No_Of_Events_Winter$`F`[is.na(No_Of_Events_Winter$`F`)] <- 0
+No_Of_Events_Winter$M[is.na(No_Of_Events_Winter$M)] <- 0  
+No_Of_Events_Winter <- No_Of_Events_Winter %>% 
+  mutate(
+    Score = (`F`-M) /(`F`+M)
+  )
+
+EventsDistWinter <- ggplot(No_Of_Events_Winter) +
+  geom_tile(aes(x=Year, y=Sport, fill=Score), color="black") +
+  scale_fill_gradient(low="dodgerblue1", 
+                      high="purple", 
+                      breaks = seq(-1,1,1),
+                      labels = c("Only Male", "Perfectly Even", "Only Female")) +
+  scale_x_continuous(breaks = seq(1896,2016,4)) +
+  labs(title = "Events Distribution - Male vs Female (Winter Games)",
+       fill = "Score") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        axis.text.x = element_text(angle = 90, hjust = 0))
+print(EventsDistWinter)
+
+```
+
+· At Summer Olympics, you can clearly see the rate of change starting from the 60s. Cultural changes found their way to sporting events, and women were allowed to participate in rapidly growing number of events.  
+· Summer Olympics attract more than 4 times athlete participation than Winter Olympics  
+· 34 sports competitions is the maximum in a summer olympic game  
+· Diving and swimming has always been more popular with women  
+· In this sport, women's performance has also been on par with men if not better  
+· Synchronized swimming, softball has only women participants  
+· Rhythmic gymnastics, introduced in 1984 has events only for women.  
+· In 1920, Ice Hockey was actually a summer event.  
+· There are winter events like Nordic combined in which there is no female participation till date  
+· The participation rate of women has changed dramatically in many sports post World War  
+· At Winter Olympics, the number of Events grew significantly for both men and women, but women's march to equal representation started in 80s, where from only 15 events in 1984, 48 events were open for women in 2014.  
+· Neither of the world war breaks affected the athlete participation in the succeeding years.  
+· In general, winter sports are more egalitarian.  
+
+
+  
+We now look at the top performing countries across all the Olympics over the years, i.e. 'Which countries have won the most medals at the Olympic Games so far?'
+```{r warning=FALSE}
+## Overall Top Countries
+TopCountries <- dcast(medals, Country ~ Medal)
+#TopCountries <- TopCountries[,c(1,3,4,2)]
+TopCountries <- arrange(TopCountries,desc(Gold), desc(Silver), desc(Bronze))
+TC <- as.list(head(TopCountries$Country,15))
+TopCountries <- melt(TopCountries, id="Country")
+TopCountries <- TopCountries[TopCountries$Country %in% TC,]
+
+### Best Performing Countries at Olympics (Men + Women)
+TopCtries <- ggplot(TopCountries) +
+  geom_bar(aes(x=reorder(Country,value), y=value, fill=variable), stat = "identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  scale_y_continuous(breaks = seq(0,6500,1000)) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries",fill = "Type of Medal")
+print(TopCtries)
+
+### Top Countries (Women)
+femalemeds <- countries[,c(16,3,15)]
+femalemeds <- femalemeds %>%
+  filter(Sex == 'F') %>%
+  dcast(Country ~ Medal) %>% 
+  arrange(desc(Gold), desc(Silver), desc(Bronze))
+FTC <- as.list(head(femalemeds$Country,15))
+femalemeds <- melt(femalemeds, id="Country")
+femalemeds <- femalemeds[femalemeds$Country %in% FTC,]
+
+### Best Performing Countries at Olympics (Women)
+FemaleTopCtries <- ggplot(femalemeds) +
+  geom_bar(aes(x=reorder(Country,value), y=value, fill=variable), stat = "identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  scale_y_continuous(breaks = seq(0,2000,500)) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries (Females Only)",fill = "Type of Medal")
+print(FemaleTopCtries)
+
+```
+
+USA, Russia and Germany dominate in both the graphs, showing that both men and women from these countries have done well at the Olympics. Looking down, Canada, China and Australia replace UK, France and Italy in the Top 6 in the women's graph from the overall graph, indicating that women perform better in these countries than the men.
+
+We will now show which countries dominated at the Olympics over the years, taking 4 years at 40 year gaps to see the trends of domination by countries. These graphs are for medals won by women only.
+
+Looking at the 1900 Games first.
+```{r warning=FALSE}
+### Women at 1900 Olympics
+Data_1900 <- countries %>%
+  filter(Year == 1900 & Sex == 'F' & Medal != 'Did Not Win') %>%
+  group_by(Country, Medal) %>%
+  summarize(
+    count = length(Medal)
+  ) %>%
+  arrange(count)
+
+levs_1900 <- Data_1900 %>%
+  group_by(Country) %>%
+  summarize(Total=sum(count)) %>%
+  arrange(Total) %>%
+  select(Country)
+Data_1900$Country <- factor(Data_1900$Country, levels=levs_1900$Country)
+
+TC1900 <- ggplot(Data_1900) +
+  geom_col(aes(x=Country, y=count, fill=Medal)) +
+  coord_flip() +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries (1900 Olympics)",fill = "Type of Medal")
+print(TC1900)
+
+```
+
+1900 Games were the first to have female participants. 6 countries sent female athletes to the games (USA, France, UK, Switzerland, Italy and Czech Republic). 5 of those won at least one medal (all except Italy). US women won the most medals while UK won the most gold medals. Helene de Pourtales became the first woman to win an Olympic gold medal. She won gold in sailing.
+
+
+Looking at the 1936 Games.
+```{r warning=FALSE}
+### Women at 1936 Olympics
+Data_1936 <- countries %>%
+  filter(Year == 1936 & Sex == 'F' & Medal != 'Did Not Win') %>%
+  group_by(Country, Medal) %>%
+  summarize(
+    count = length(Medal)
+  ) %>%
+  arrange(count)
+
+levs_1936 <- Data_1936 %>%
+  group_by(Country) %>%
+  summarize(Total=sum(count)) %>%
+  arrange(Total) %>%
+  select(Country)
+Data_1936$Country <- factor(Data_1936$Country, levels=levs_1936$Country)
+
+TC1936 <- ggplot(Data_1936) +
+  geom_col(aes(x=Country, y=count, fill=Medal)) +
+  coord_flip() + 
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries (1936 Olympics)",fill = "Type of Medal")
+print(TC1936)
+
+```
+
+Compared to 6 at the 1900 Olympics, 31 countries sent female athletes in 1936. 16 countries won at least a medal, 11 more than 1900. Women won a total of 97 medals. German women won the most medals with 27. They also won the most gold medals with 12. USA and Hungary were the other top performers.
+
+
+Looking at the 1976 Games.
+```{r warning=FALSE}
+### Women at 1976 Olympics
+Data_1976 <- countries %>%
+  filter(Year == 1976 & Sex == 'F' & Medal != 'Did Not Win') %>%
+  group_by(Country, Medal) %>%
+  summarize(
+    count = length(Medal)
+  ) %>%
+  arrange(count)
+
+levs_1976 <- Data_1976 %>%
+  group_by(Country) %>%
+  summarize(Total=sum(count)) %>%
+  arrange(Total) %>%
+  select(Country)
+Data_1976$Country <- factor(Data_1976$Country, levels=levs_1976$Country)
+
+TC1976 <- ggplot(Data_1976) +
+  geom_col(aes(x=Country, y=count, fill=Medal)) +
+  coord_flip() + 
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries (1976 Olympics)",fill = "Type of Medal")
+print(TC1976)
+
+```
+
+65 countries took part in the 1976 games. 20 out of the 65 countries won at least one medal. Women won a total of 440 medals at the 1976 games (>4x the 1936 games). Germany won 126 medals while Russia won 120 medals. USA was in 3rd position with 60 medals (only 10 of which were gold). Japanese women won 12 medals (all were gold). German women continued to dominate but the Russians were very close to them now.
+
+
+Looking at the most recent, 2016 Games.
+```{r warning=FALSE}
+### Women at 2016 Olympics
+Data_2016 <- countries %>%
+  filter(Year == 2016 & Sex == 'F' & Medal != 'Did Not Win') %>%
+  group_by(Country, Medal) %>%
+  summarize(
+    count = length(Medal)
+  ) %>%
+  arrange(count)
+
+
+TC16 <- Data_2016 %>%
+  group_by(Country) %>%
+  summarise(
+    count = sum(count)
+  ) %>%
+  arrange(desc(count)) %>%
+  select(Country)
+TC16 <- head(TC16,25)
+
+Data_2016_sub <- Data_2016 %>%
+  filter(Country %in% TC16$Country)
+levs_2016 <- Data_2016_sub %>%
+  group_by(Country) %>%
+  summarize(Total=sum(count)) %>%
+  arrange(Total) %>%
+  select(Country)
+Data_2016_sub$Country <- factor(Data_2016_sub$Country, levels=levs_2016$Country)
+
+TC2016 <- ggplot(Data_2016_sub) +
+  geom_col(aes(x=Country, y=count, fill=Medal)) +
+  coord_flip() + 
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries (2016 Olympics)",
+       fill = "Type of Medal", caption = "Top 25 Countries only")
+print(TC2016)
+
+```
+
+201 countries sent female athletes at the most recent Olympics. 68 countries won at least one medal. Women won a total of 1234 medals at the 2016 games (3x the 1976 games). Unlike the 1936 and 1976 games, USA dominated the 2016 games, winning a total of 188 medals. Russia was second with 105 medals. After dominating the Olympics for over 40 years, the Germans slipped to 4th place. American women took over the top spot by a huge distance. Canada came in 3rd position.
+
+
+We have seen how different countries have dominated the Games in different decades. We now take a look at how many countries had better performances from their women than men at a particular game. 
+```{r warning=FALSE}
+### Female Medals Proportion > Female Proportion
+proportion <- countries %>% 
+  filter(Year!=1906) %>%
+  group_by(Year, Country, Sex) %>%
+  summarize(Athletes = length(unique(ID)),
+            Medals = sum(!is.na(Medal))) 
+proportion <- dcast(setDT(proportion), Year + Country ~ Sex, fun.aggregate = sum, value.var = c("Athletes","Medals"))
+proportion <- proportion %>% 
+  mutate(Prop_F_athletes = Athletes_F/(Athletes_F + Athletes_M),
+         Prop_F_medals = Medals_F/(Medals_F + Medals_M)) 
+proportion$Prop_F_medals[proportion$Medals_M + proportion$Medals_F == 0] <- NA
+proportion$FDom <- 0
+proportion$FDom[proportion$Prop_F_medals > proportion$Prop_F_athletes] <- 1
+
+proportion1 <- proportion %>%
+  group_by(Year) %>%
+  summarize(
+    No_Of_Countries = sum(FDom)
+  )
+
+CFBM <- ggplot(proportion1, aes(x=Year, y = No_Of_Countries)) +
+  geom_line(color="hotpink") +
+  geom_point(color="hotpink") +
+  geom_label(aes(label=No_Of_Countries),color="blue", vjust=0, size=3) +
+  scale_x_continuous(breaks = seq(1896, 2016, 4)) +
+  labs(y = "Number of Countries", title = "Number of Countries Where Females Performed Better Than Males")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 0))
+print(CFBM)
+
+```
+
+This graph shows the number of countries where the proportion of the medals won by female athletes is more than the proportion of medals won by male athletes. It started off with 4 countries at the 1900 games to 16 countries at the recent, 2016, games. You can see that there is a steay rise in the number of countries over the years.
+
+
+
+We now take a look at medals per athlete won by the top countries. Are there countries where women have traditionally performed better than men?
+```{r warning=FALSE}
+### Medals per athlete
+Athletes <- alldata %>%
+  group_by(Country, Sex) %>%
+  summarise(
+    count = length(Name)
+  ) %>%
+  dcast(Country ~ Sex) %>%
+  mutate(
+    total = `F` + M
+  )
+
+Meds <- countries %>%
+  group_by(Country, Sex) %>%
+  summarise(
+    count = length(!is.na(Medal))
+  ) %>%
+  dcast(Country ~ Sex) 
+
+Meds$`F`[is.na(Meds$`F`)] <- 0
+Meds$M[is.na(Meds$M)] <- 0
+Meds <- Meds %>%
+  mutate(
+    total = `F` + M
+  )
+
+MedsperAthletes <- merge(Athletes, Meds, by="Country", all.x = T)
+MedsperAthletes <- MedsperAthletes %>%
+  mutate(
+    MpF = F.y/F.x,
+    MpM = M.y/M.x,
+    MpA = total.y/total.x
+  ) %>%
+  arrange(desc(total.y))
+
+MedsperAthletes <- head(MedsperAthletes,20)
+MedsperAthletes <- MedsperAthletes[,c(1,8,9,10)]
+colnames(MedsperAthletes) <- c("Country", "Female", "Male","Total")
+MedsperAthletes$Colour <- 0
+MedsperAthletes$Colour[(MedsperAthletes$Female>MedsperAthletes$Male)] <- 1
+MedsperAthletes1 <- melt(MedsperAthletes, id=c("Country","Total", "Colour"))
+levs <- MedsperAthletes1 %>%
+  group_by(Country) %>%
+  arrange(Total) %>%
+  select(Country, Colour)
+levs <- levs[c(1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39),]
+MedsperAthletes1$Country <- factor(MedsperAthletes1$Country, levels=levs$Country)
+
+
+a <- ifelse(levs$Colour == 1,"red","black")
+MpAMvF <- ggplot(MedsperAthletes1) +
+  geom_bar(aes(x=Country, y=value, fill=variable), 
+           stat = "identity", position = "dodge") +
+  coord_flip() +
+  scale_fill_manual(values = c("hotpink", "dodgerblue1")) +
+  labs(title = "Medals per Athlete (Male vs Female)",
+       fill = "Sex", x="Country", y="Medal per Athlete", 
+       caption = "Medals per athlete for females is better than males for countries in red") +
+  theme(axis.text.y = element_text(color = a))
+print(MpAMvF)
+
+```
+
+We can observe the following:
+1. Russia and USA dominate.    
+2. 9 countries (marked in red) have women earning more medals per athlete than their men.    
+3. Romanian, Chinese and South Korean women have won at least twice more medals per athlete than their men.    
+4. There are 6 countries where only the women have won medals: Zimbabwe, Montenegro, Costa Rica, Bahrain, Mozambique and Kosovo.    
+5. 44 countries where women have more medals per athlete than men, i.e. around 30% of all the countries to have won a medal, which is quite impressive.    
+
+
+Now we look at the sports in which the top countries are really good at. We take the Top 5 performing countries amongs women and see which sport each country's women do particularly well in.
+```{r warning=FALSE}
+### Top Countries Best in Which Sport
+FTC <- as.list(head(femalemeds$Country,5))
+TCBestSports <- countries %>%
+  filter(Country %in% FTC & Sex == 'F') %>%
+  group_by(Country, Sport) %>%
+  summarise(
+    No_Of_Medals = length(Medal)
+  ) %>%
+  arrange(Country, desc(No_Of_Medals))
+
+TCTS <- ggplot(TCBestSports, aes(subgroup = Country, fill = Country, area = No_Of_Medals, label = Sport)) +
+  geom_treemap() +
+  geom_treemap_text(colour = "white", place = "centre",grow = TRUE)+
+  scale_fill_brewer(palette = "Dark2") +
+  labs(title = "Which Sports Are The Top Countries Good At?")
+print(TCTS)
+
+```
+
+Observations:  
+1. Sports like Athletics, Swimming and Gymnastics are the most popular amongst female participants of all the top countries  
+2. Apart from the 3 sports, American women excel in Basketball where they have won the gold medal for the last 6 games.   
+3. Russian women perform well in sports like Rowing, Fencing and Volleyball. Russia's domination in volleyball came when they used to participate as the Soviet Union.    
+4. German women excel in Rowing, Football and Hockey.  
+5. The Chinese perform well in sports like Diving, Judo and Badminton.  
+6. Australian Women excel in Softball, Water Polo and Cycling.   
+
+
+We now take a look at the 3 most popular sports amongst women and which countries have done well in those sports over the years.
+
+Let us start with Athletics.
+```{r warning=FALSE}
+### Getting Data for onlt Female Athletes
+f_countries_data <- countries[countries$Sex=='F',]
+
+### Defining Colour Palette
+colpal <- c("#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00",
+             "#cab2d6","#6a3d9a")
+
+### Athletics
+Athletics <- f_countries_data %>%
+  filter(Sport == 'Athletics') %>% 
+  select(Country, Medal) %>%
+  dcast(Country ~ Medal) %>%
+  arrange(desc(Gold), desc(Silver), desc(Bronze))
+TC <- as.list(head(Athletics$Country,9))
+Athletics <- Athletics %>%
+  melt(id="Country") %>%
+  filter(Country %in% TC)
+
+Ath_timeline <- f_countries_data %>% 
+  filter(Sport == 'Athletics' & Country %in% TC) %>%
+  group_by(Games, Country) %>%
+  summarize(
+    count=n()
+  ) %>%
+  arrange(Country, Games) 
+
+AA <- ggplot(Ath_timeline) +
+  geom_smooth(aes(x=Games, y=count, group=Country, color = Country), se=F) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 0))+
+  labs(x="Games",y="Number of Medals",color="Country", title="Top Performing Countries Over the Years (Athletics)") +
+  scale_color_manual(values = colpal)
+print(AA)
+
+
+ggplot(Athletics) +
+  geom_bar(aes(x=reorder(Country,value), y=value, fill=variable), stat = "identity") +
+  coord_flip() +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  labs(x="Games",y="Number of Medals",color="Country", title="Top Performing Countries Over the Years (Athletics)")
+
+```
+
+USA women performed the best in recent games. Russia, USA’s toughest competitor, was banned from 2016 Olympics due to state-sponsored doping charges. Germany was the top gun athletics in the 1980s, but their performances since, have regressed (no medal in 2016). Jamaica has consistently improved since the 1990s and were the 2nd best in 2016.
+
+Let us look at Swimming next.
+```{r warning=FALSE}
+### Swimming
+Swimming <- f_countries_data %>%
+  filter(Sport == 'Swimming') %>% 
+  select(Country, Medal) %>%
+  dcast(Country ~ Medal) %>%
+  arrange(desc(Gold), desc(Silver), desc(Bronze))
+TC <- as.list(head(Swimming$Country,7))
+Swimming <- Swimming %>%
+  melt(id="Country") %>%
+  filter(Country %in% TC)
+
+Swim_timeline <- f_countries_data %>% 
+  filter(Sport == 'Swimming' & Country %in% TC) %>%
+  group_by(Games, Country) %>%
+  summarize(
+    count=n()
+  ) %>%
+  arrange(Country, Games) 
+
+SS <- ggplot(Swim_timeline) +
+  geom_smooth(aes(x=Games, y=count, group=Country, color = Country), se=F) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 0))+
+  labs(x="Games",y="Number of Medals",color="Country", title="Top Performing Countries Over the Years (Swimming)") +
+  scale_color_manual(values = colpal)
+print(SS)
+
+
+ggplot(Swimming) +
+  geom_bar(aes(x=reorder(Country,value), y=value, fill=variable), stat = "identity") +
+  coord_flip() +
+  labs(x="Games",y="Number of Medals",color="Country", title="Top Performing Countries Over the Years (Swimming)") +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1"))
+
+```
+
+Again, it's women from USA who have performed the best at the most recent games. Their performances have consistently increased over the years, except for a dip in the 1970s and early 1980s when Germany was at the top. Germany was the top gun in swimming as well till the 1980s. However, jut like in Athletics, they have suffered a dip since. Australia has consistently improved and is currently the only competition for USA.
+
+Let us look at Gymnastics next.
+```{r warning=FALSE}
+### Gymnastics
+Gymnastics <- f_countries_data %>%
+  filter(Sport == 'Gymnastics') %>% 
+  select(Country, Medal) %>%
+  dcast(Country ~ Medal) %>%
+  arrange(desc(Gold), desc(Silver), desc(Bronze))
+TC <- as.list(head(Gymnastics$Country,7))
+Gymnastics <- Gymnastics %>%
+  melt(id="Country") %>%
+  filter(Country %in% TC)
+
+Gym_timeline <- f_countries_data %>% 
+  filter(Sport == 'Gymnastics' & Country %in% TC) %>%
+  group_by(Games, Country) %>%
+  summarize(
+    count=n()
+  ) %>%
+  arrange(Country, Games) 
+
+GG <- ggplot(Gym_timeline) +
+  geom_smooth(aes(x=Games, y=count, group=Country, color = Country), se=F) +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 0))+
+  labs(x="Games",y="Number of Medals",color="Country", title="Top Performing Countries Over the Years (Gymnastics)") +
+  scale_color_manual(values = colpal)
+print(GG)
+
+ggplot(Gymnastics) +
+  geom_bar(aes(x=reorder(Country,value), y=value, fill=variable), stat = "identity") +
+  coord_flip() +
+  labs(x="Games",y="Number of Medals",color="Country", title="Top Performing Countries Over the Years (Gymnastics)") +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1"))
+
+```
+
+Russia was the best performer in gymnastics from the 1950s to the 1980s, but their performances have steadily decreased over the years, and have been overtaken by USA since 2004. USA’s performances have more or less been consistent over the years (around 10 medals at all games). China’s performances have improved during the 2000s but they suffered a dip in 2016 games.
+
+Let us look at the overall summary for all sports.
+```{r warning=FALSE}
+### Overall
+AllSports <- f_countries_data %>%
+  select(Country, Medal) %>%
+  dcast(Country ~ Medal) %>%
+  arrange(desc(Gold), desc(Silver), desc(Bronze))
+TC <- as.list(head(AllSports$Country,10))
+AllSports <- AllSports %>%
+  melt(id="Country") %>%
+  filter(Country %in% TC)
+
+All_timeline <- f_countries_data %>% 
+  filter(Country %in% TC) %>%
+  group_by(Year, Country) %>%
+  summarize(
+    count=n()
+  ) %>%
+  arrange(Country, Year) 
+
+AS <- ggplot(All_timeline) +
+  geom_smooth(aes(x=Year, y=count, group=Country, color = Country), se=F) +
+  labs(x="Year",y="Number of Medals",color="Country", title="Top Performing Countries Over the Years (All Sports)") +
+  scale_x_continuous(breaks = seq(1900,2016,4)) +
+  scale_color_manual(values = colpal)
+print(AS)
+
+```
+
+As the medal tally for women showed before, USA have dominated women sports for the last 3 decades and they continue to grow. Their closet competitors are Russia, Canada, China and Germany. However, we saw that Canada was not amongst the top coutries in the 3 most popular sports for women. The reason for this difference may be due to the fact that the above 3 sports are played at the Summer Games. Maybe, Canada does well at the Winter games. Let us look at the top performing countries season wise.
+
+```{r warning=FALSE}
+### Top Performing Countries at the Summer Games
+Data_Summer <- countries %>%
+  filter(Season == "Summer" & Sex == 'F') %>%
+  group_by(Country, Medal) %>%
+  summarize(
+    count = length(Medal)
+  ) %>%
+  arrange(count)
+
+
+TC_Summer <- Data_Summer %>%
+  group_by(Country) %>%
+  summarise(
+    count = sum(count)
+  ) %>%
+  arrange(desc(count)) %>%
+  select(Country)
+TCSummer <- head(TC_Summer,10)
+
+Data_Summer_sub <- Data_Summer %>%
+  filter(Country %in% TCSummer$Country)
+levs_Summer <- Data_Summer_sub %>%
+  group_by(Country) %>%
+  summarize(Total=sum(count)) %>%
+  arrange(Total) %>%
+  select(Country)
+Data_Summer_sub$Country <- factor(Data_Summer_sub$Country, levels=levs_Summer$Country)
+
+TCSummerPlot <- ggplot(Data_Summer_sub) +
+  geom_col(aes(x=Country, y=count, fill=Medal), position = "dodge") +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries (Summer Games)",
+       fill = "Type of Medal") +
+  scale_x_discrete(limits = rev(levels(Data_Summer_sub$Country)))
+print(TCSummerPlot)
+
+### Top Performing Countries at the Winter Games
+Data_Winter <- countries %>%
+  filter(Season == "Winter" & Sex == 'F') %>%
+  group_by(Country, Medal) %>%
+  summarize(
+    count = length(Medal)
+  ) %>%
+  arrange(count)
+
+TC_Winter <- Data_Winter %>%
+  group_by(Country) %>%
+  summarise(
+    count = sum(count)
+  ) %>%
+  arrange(desc(count)) %>%
+  select(Country)
+TCWinter <- head(TC_Winter,10)
+
+Data_Winter_sub <- Data_Winter %>%
+  filter(Country %in% TCWinter$Country)
+levs_Winter <- Data_Winter_sub %>%
+  group_by(Country) %>%
+  summarize(Total=sum(count)) %>%
+  arrange(Total) %>%
+  select(Country)
+Data_Winter_sub$Country <- factor(Data_Winter_sub$Country, levels=levs_Winter$Country)
+
+TCWinterPlot <- ggplot(Data_Winter_sub) +
+  geom_col(aes(x=Country, y=count, fill=Medal), position = "dodge") +
+  scale_fill_manual(values = c("gold4", "gray70", "gold1")) +
+  labs(x = "Countries", y = "Number of Medals", title = "Top Performing Countries (Winter Games)",
+       fill = "Type of Medal") +
+  scale_x_discrete(limits = rev(levels(Data_Winter_sub$Country)))
+print(TCWinterPlot)
+
+```
+
+As expected, USA, Russia and Germany dominate at the Summer games. USA have won the most medals as well as the most gold medals. Russia and Germany are their closest competitors. China and Australia are next in line. Canada is in the 10th position.
+In the winter games, however, the trends change. Although, the top 3 are the same, Russia has replaced USA at the top, with most medals and the difference between them is very low. Canada has now come to the 4th spot in total medals. However, they are first in the number of Gold medals. This confirms the trends shown in the graph for all sports above.  
+
+
+  
+#### **MODELS AND ANALYSIS**
+
+Let us take a look at some predictions. In the first model we are predicting whether an athlete will win a medal or not based on their height, weight, age and country. 
+```{r warning=FALSE}
+### Predicting on Height, Weight and Age if medal will be won or not
+females <- alldata[alldata$Sex=="F",c(3,4,5,6,13,16,15)]
+females$Medal <- ifelse(is.na(females$Medal),0,1)
+females$Age[is.na(females$Age)] <- mean(females$Age)
+females$Height[is.na(females$Height)] <- mean(females$Height)
+females$Weight[is.na(females$Weight)] <- mean(females$Weight)
+set.seed(1)
+train <- sample(nrow(females),4000)
+test <- females[-train,]
+ActualMedals <- females$Medal[-train]
+glm.fit=glm(Medal ~ Age + Height + Weight + Country, data = females, family = "binomial")
+summary(glm.fit)
+probs <- predict(glm.fit, test, type = "response")
+pred.glm <- rep(0, length(probs)) 
+pred.glm[probs > 0.5] <- 1
+table(pred.glm, ActualMedals)
+# Accuracy for Logitic Regression
+mean(pred.glm == ActualMedals)
+
+```
+
+The test accuracy for the data is very high, at around 84%, implying the test error rate is at around 16%. This looks very good. But if you look closely, the model success rate for athletes winning is very low but it is very high for athletes not winning the medals. Thus, this is not a very good model for predicting if an athlete will win a medal.
+
+Let us look at the relationship between average age, height and weight with the medals won. We will also look at how the number of participants play a role in the number of medals won.
+```{r warning=FALSE}
+fdata <- alldata[alldata$Sex=="F",]
+
+fdata <- fdata %>%
+  group_by(Country, Sport) %>%
+  summarise(
+    Av_Height = mean(Height, na.rm = T),
+    Av_Weight = mean(Weight, na.rm = T),
+    Av_Age = mean(Age, na.rm = T),
+    Participants = length(Name),
+    Medals = sum(!is.na(Medal))
+  ) %>%
+  select(Country, Sport, Av_Height, Av_Weight, Av_Age, Participants, Medals) %>%
+  group_by(Country, Sport)
+
+fdata$Av_Height[is.na(fdata$Av_Height)] <- mean(fdata$Av_Height, na.rm = T)
+fdata$Av_Weight[is.na(fdata$Av_Weight)] <- mean(fdata$Av_Weight, na.rm = T)
+fdata$Av_Age[is.na(fdata$Av_Age)] <- mean(fdata$Av_Age, na.rm = T)
+    
+ggplot(fdata, aes(x=Av_Age, y=Medals)) +
+  geom_point(color="yellow3") + 
+  geom_smooth(se=F) +
+  labs(x="Average Age", title = "Age vs Number of Medals")
+
+ggplot(fdata, aes(x=Av_Height, y=Medals)) +
+  geom_point(color="tomato") + 
+  geom_smooth(se=F) +
+  labs(x="Average Height", title = "Height vs Number of Medals")
+
+ggplot(fdata, aes(x=Av_Weight, y=Medals)) +
+  geom_point(color="mediumvioletred") + 
+  geom_smooth(se=F) +
+  labs(x="Average Weight", title = "Weight vs Number of Medals")
+
+ggplot(fdata, aes(x=Participants, y=Medals)) +
+  geom_point(color="seagreen") + 
+  geom_smooth(se=F) +
+  labs(x="Participants", title = "Participants vs Number of Medals")
+
+
+```
+
+We can see that there is hardly any relationship between average age, height and weight and medals won. However, there is good positive relationship between participants and medals won.  
+The next predictive model we are using is to predict how many medals a country will win, given, the sport, average height, average weight and average age.
+
+```{r}
+### Prediction 2
+
+mod1 <- lm(Medals ~ Av_Age + Av_Height + Av_Weight + Sport + Country + Participants, data = fdata)
+summary(mod1)
+
+mod2 <- lm(Medals ~ Participants, data = fdata)
+summary(mod2)
+```
+
+The RSquared value for the model is .6009, which is quite good. However, this values is highly skewed by number of participants. The model with only participants as a predictor has an RSquared of 0.5161. 
+
+
+  
+#### **FINDINGS AND MANAGERIAL IMPLICATIONS**
+
+_Finding 1:_ Women participation has increased since the inception of the first ever Olympics.  
+_Finding 2:_ A few countries have consistently been top performers.  
+_Finding 3:_ Number of participants and number of participating countries in both Summer and Winter Olympics have both seen an ascent for both the genders.  
+_Finding 4:_ There are quite a few sports which have mostly seen being dominated by women such as volleyball, synchronized swimming and softball to name a few.  
+_Finding 5:_ Few countries are known to be excellent performers in particular sports.  
+_Finding 6:_ Sportswomen from countries like Romania, China and South Korea have consistently performed better than their male counterparts.  
+
+
+  
+#### **CONCLUSION**  
+
+1. Low women participation in the Olympics in initial years.    
+2. More women participated in the Olympics in the past century.    
+3. The number of medals won by women in different countries is increasing.    
+4. More countires have women performing better than men at the Olympic Games over the years.    
+5. German women dominated at the beginning, followed by Russia and now it is the US women who are dominating. 
+6. Top countries: US, Germany, Russia, Australia, China, Canada (Winter Olympics).  
+7. Athletics, Swimming and Gymnastics are the most poular sports amongst women.  
+8. Equality in the Olympics events for men and women athletes has improved over the years, especially at the Winter Games.  
+
+From the predictive models, we have come to the conclusion that age, height and weight don't play an important role in the number of medals a country wins. However, the number of athletes in your contingent play an important role in number of medals. The higher the number of athletes in your contingents, the more medals your nation wins. This is mere correlation, and not causation. The larger the contingent, the odds are more in your favor. Intstead, winning really depends on the quality of the athletes and their performance. 
+
+
+  
+#### **REFERENCES**
+
+Griffin, R. H. (2018, June). 120 years of Olympic history: Athletes and results basic bio data on athletes and medal results from Athens 1896 to Rio 2016. Retrieved November 26, 2018, from https://www.kaggle.com/heesoo37/120-years-of-olympic-history-athletes-and-results/kernels  
+McGlone, H (2016, August). Olympic Logo Animations. Retrieved November 26, 2018, from https://www.trendhunter.com/trends/olympic-logo-animation  
+Ilyk, R (2018, February). What do the colors on the Olympics symbol mean?. Retrieved November 26, 2018, from https://www.quora.com/What-do-the-colors-on-the-Olympics-symbol-mean  
